@@ -1,0 +1,51 @@
+buildscript {
+    ext {
+        springBootVersion = '2.0.3.RELEASE'
+    }
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
+
+group = 'com.kakaopay.batch'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = 1.8
+//mainClassName = 'com.kakaopay.batch.demo.BatchDemoApplication'
+
+repositories {
+    mavenCentral()
+}
+
+jar {
+    manifest {
+        attributes 'Title' : 'Batch Demo Application', 'Version' : version, 'Main-Class' : 'com.kakaopay.batch.demo.BatchDemoApplication'
+    }
+    archiveName 'batch-demo.jar'
+    dependsOn configurations.runtime
+    from {
+        configurations.compile.collect {it.isDirectory() ? it : zipTree(it)}
+    }
+}
+
+dependencies {
+    compile('org.springframework.boot:spring-boot-starter-batch')
+    compile('org.springframework.boot:spring-boot-starter-data-jpa')
+    compile('org.springframework.boot:spring-boot-starter-jdbc')
+    compile('org.springframework.boot:spring-boot-starter-web')
+    runtime('mysql:mysql-connector-java')
+    compileOnly('org.projectlombok:lombok')
+    testCompile('org.springframework.boot:spring-boot-starter-test')
+    testCompile('org.springframework.batch:spring-batch-test')
+}
+
+//task wrapper(type: Wrapper) {
+//    gradleVersion = '1.10'
+//}
