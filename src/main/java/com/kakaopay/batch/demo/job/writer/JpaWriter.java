@@ -1,4 +1,4 @@
-package com.kakaopay.batch.demo.config;
+package com.kakaopay.batch.demo.job.writer;
 
 import com.kakaopay.batch.demo.entity.TakoyakiFoodTruck;
 import com.kakaopay.batch.demo.repository.TakoyakiFoodTruckRepository;

@@ -1,0 +1,5 @@
+# logback setting
+logging:
+  level:
+    root: INFO
+    org.hibernate: INFO

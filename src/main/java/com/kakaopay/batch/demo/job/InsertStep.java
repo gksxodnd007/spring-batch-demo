@@ -1,12 +1,10 @@
-package com.kakaopay.batch.demo.config;
+package com.kakaopay.batch.demo.job;
 
 import com.kakaopay.batch.demo.dto.TakoyakiFoodTruckDto;
 import com.kakaopay.batch.demo.entity.TakoyakiFoodTruck;
-import lombok.RequiredArgsConstructor;
-import org.springframework.batch.core.Job;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Step;
-import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
-import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
@@ -14,8 +12,8 @@ import org.springframework.batch.item.database.JpaItemWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ResourceLoader;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.annotation.PostConstruct;
@@ -23,48 +21,40 @@ import javax.persistence.EntityManagerFactory;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.*;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Queue;
 
-@Configuration
-@EnableBatchProcessing
-public class JobConfig {
+@Component
+public class InsertStep {
 
-    private static final String JOB_NAME = "demoJop";
-    private static final String STEP_NAME = "demoStep";
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    private BufferedReader bufferedReader;
-    private Queue<String> csvFileDatas;
+    private static final String STEP_NAME = "insertStep";
 
-    private JobBuilderFactory jobBuilderFactory;
-    private EntityManagerFactory entityManagerFactory;
     private StepBuilderFactory stepBuilderFactory;
     private ResourceLoader resourceLoader;
+    private EntityManagerFactory entityManagerFactory;
     private PlatformTransactionManager transactionManager;
 
+    private Queue<String> csvFileDatas;
+
     @Autowired
-    public JobConfig(JobBuilderFactory jobBuilderFactory,
-                     EntityManagerFactory entityManagerFactory,
-                     StepBuilderFactory stepBuilderFactory,
-                     ResourceLoader resourceLoader,
-                     @Qualifier("demoTransactionManager") PlatformTransactionManager transactionManager) {
-        this.jobBuilderFactory = jobBuilderFactory;
+    public InsertStep (EntityManagerFactory entityManagerFactory,
+                       StepBuilderFactory stepBuilderFactory,
+                       ResourceLoader resourceLoader,
+                       @Qualifier("demoTransactionManager") PlatformTransactionManager transactionManager) {
         this.entityManagerFactory = entityManagerFactory;
         this.stepBuilderFactory = stepBuilderFactory;
         this.resourceLoader = resourceLoader;
         this.transactionManager = transactionManager;
     }
 
-    @Bean
-    public Job job(Step step) {
-        return jobBuilderFactory.get(JOB_NAME)
-                .start(step)
-                .build();
-    }
-
     @PostConstruct
     public void init() {
         try {
-            bufferedReader = new BufferedReader(new InputStreamReader(resourceLoader.getResource("classpath:takoyakiDummyData.txt").getInputStream(), "UTF-8"));
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(resourceLoader.getResource("classpath:takoyakiDummyData.txt").getInputStream(), "UTF-8"));
             csvFileDatas = new LinkedList<>();
 
             bufferedReader.lines().forEach(line -> csvFileDatas.add(line));
@@ -75,8 +65,7 @@ public class JobConfig {
 
     //partitioner를 통해 멀티 스레드로 돌릴 경우도 있다.
     //TODO Reader에서 더이상 읽을 데이터가 없으면 JOB이 종료된다.
-    @Bean(name = "reader")
-    public ItemReader<TakoyakiFoodTruckDto> reader() {
+    private ItemReader<TakoyakiFoodTruckDto> reader() {
         return () -> {
             if (!csvFileDatas.isEmpty()) {
                 List<String> line = Arrays.asList(csvFileDatas.poll().split(","));
@@ -86,6 +75,8 @@ public class JobConfig {
                 foodTruckDto.setLongitude(Double.parseDouble(line.get(2)));
                 foodTruckDto.setRegion(line.get(3));
                 foodTruckDto.setDescription(line.get(4));
+                logger.info("reader : {}", foodTruckDto.toString());
+
 
                 return foodTruckDto;
             } else {
@@ -94,8 +85,7 @@ public class JobConfig {
         };
     }
 
-    @Bean(name = "processor")
-    public ItemProcessor<TakoyakiFoodTruckDto, TakoyakiFoodTruck> processor() {
+    private ItemProcessor<TakoyakiFoodTruckDto, TakoyakiFoodTruck> processor() {
         return item -> {
             TakoyakiFoodTruck truck = new TakoyakiFoodTruck();
             truck.setName(item.getName());
@@ -103,29 +93,29 @@ public class JobConfig {
             truck.setLongitude(item.getLongitude());
             truck.setRegion(item.getRegion());
             truck.setDescription(item.getDescription());
+            logger.info("processor : {}", item.toString());
 
             return truck;
         };
     }
 
-    @Bean(name = "writer")
-    public JpaItemWriter<TakoyakiFoodTruck> writer() {
+    private JpaItemWriter<TakoyakiFoodTruck> writer() {
         JpaItemWriter<TakoyakiFoodTruck> writer = new JpaItemWriter<>();
         writer.setEntityManagerFactory(entityManagerFactory);
+        logger.info("writer 실행");
         return writer;
     }
 
-    @Bean
-    public Step step(ItemReader<TakoyakiFoodTruckDto> reader,
-                     ItemProcessor<TakoyakiFoodTruckDto, TakoyakiFoodTruck> processor,
-                     JpaItemWriter<TakoyakiFoodTruck> writer) {
+    @Bean(name = "firstStep")
+    public Step firstStep() {
         return stepBuilderFactory.get(STEP_NAME)
                 .transactionManager(transactionManager)
-                .<TakoyakiFoodTruckDto, TakoyakiFoodTruck>chunk(1)
-                .reader(reader)
-                .processor(processor)
-                .writer(writer)
+                .<TakoyakiFoodTruckDto, TakoyakiFoodTruck>chunk(5)
+                .reader(reader())
+                .processor(processor())
+                .writer(writer())
                 .build();
     }
+
 
 }

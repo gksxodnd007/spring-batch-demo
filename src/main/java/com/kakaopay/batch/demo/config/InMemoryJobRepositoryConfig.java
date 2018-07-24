@@ -1,5 +1,6 @@
 package com.kakaopay.batch.demo.config;
 
+import org.springframework.batch.core.BatchStatus;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.explore.support.SimpleJobExplorer;
