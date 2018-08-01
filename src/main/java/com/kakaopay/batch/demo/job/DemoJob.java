@@ -2,7 +2,6 @@ package com.kakaopay.batch.demo.job;
 
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
-import org.springframework.batch.core.configuration.JobRegistry;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,13 +15,10 @@ public class DemoJob {
     private static final String JOB_NAME = "demoJop";
 
     private JobBuilderFactory jobBuilderFactory;
-    private JobRegistry jobRegistry;
 
     @Autowired
-    public DemoJob(JobBuilderFactory jobBuilderFactory,
-                   JobRegistry jobRegistry) {
+    public DemoJob(JobBuilderFactory jobBuilderFactory) {
         this.jobBuilderFactory = jobBuilderFactory;
-        this.jobRegistry = jobRegistry;
     }
 
     @Bean

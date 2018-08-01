@@ -1,6 +1,7 @@
 package com.kakaopay.batch.demo;
 
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
@@ -13,6 +14,8 @@ import org.springframework.context.annotation.Configuration;
 public class BatchDemoApplication {
 
     public static void main(String[] args) {
-        System.exit(SpringApplication.exit(SpringApplication.run(BatchDemoApplication.class, args)));
+        SpringApplication application = new SpringApplication(BatchDemoApplication.class);
+        application.setWebApplicationType(WebApplicationType.NONE);
+        application.run(args);
     }
 }
